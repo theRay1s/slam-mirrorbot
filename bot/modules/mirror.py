@@ -1,7 +1,7 @@
 import requests
 from telegram.ext import CommandHandler, run_async
 
-from bot import Interval, INDEX_URL,LOGGER
+from bot import Interval, INDEX_URL, LOGGER
 from bot import dispatcher, DOWNLOAD_DIR, DOWNLOAD_STATUS_UPDATE_INTERVAL, download_dict, download_dict_lock
 from bot.helper.ext_utils import fs_utils, bot_utils
 from bot.helper.ext_utils.bot_utils import setInterval
@@ -90,6 +90,8 @@ class MirrorListener(listeners.MirrorListeners):
         else:
             path = f'{DOWNLOAD_DIR}{self.uid}/{name}'
         up_name = pathlib.PurePath(path).name
+        if up_name == "None":
+            up_name = "".join(os.listdir(f'{DOWNLOAD_DIR}{self.uid}/'))
         LOGGER.info(f"Upload Name : {up_name}")
         drive = gdriveTools.GoogleDriveHelper(up_name, self)
         if size == 0:
@@ -146,7 +148,7 @@ class MirrorListener(listeners.MirrorListeners):
             else:
                 uname = f'<a href="tg://user?id={self.message.from_user.id}">{self.message.from_user.first_name}</a>'
             if uname is not None:
-                msg += f'\n\ncc : {uname}'
+                msg += f'\ncc : {uname}'
             try:
                 fs_utils.clean_download(download_dict[self.uid].path())
             except FileNotFoundError:
@@ -234,7 +236,7 @@ def tar_mirror(update, context):
 
 @run_async
 def unzip_mirror(update, context):
-    _mirror(context.bot,update, extract=True)
+    _mirror(context.bot, update, extract=True)
 
 
 mirror_handler = CommandHandler(BotCommands.MirrorCommand, mirror,
