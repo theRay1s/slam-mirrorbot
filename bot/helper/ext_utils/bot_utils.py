@@ -3,6 +3,7 @@ import re
 import threading
 import time
 
+from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot import download_dict, download_dict_lock
 
 LOGGER = logging.getLogger(__name__)
@@ -132,6 +133,18 @@ def is_url(url: str):
         return True
     return False
 
+
+def is_mega_link(url: str):
+    return "mega.nz" in url
+
+def get_mega_link_type(url: str):
+    if "folder" in url:
+        return "folder"
+    elif "file" in url:
+        return "file"
+    elif "/#F!" in url:
+        return "folder"
+    return "file"
 
 def is_magnet(url: str):
     magnet = re.findall(MAGNET_REGEX, url)

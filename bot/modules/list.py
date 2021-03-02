@@ -8,6 +8,8 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 
 @run_async
 def list_drive(update,context):
+    if update.message.text == f'/{BotCommands.ListCommand}':
+        sendMessage(f'Send a search key along with {BotCommands.ListCommand} command', context.bot, update)
     message = update.message.text
     search = message.split(' ',maxsplit=1)[1]
     LOGGER.info(f"Searching: {search}")
