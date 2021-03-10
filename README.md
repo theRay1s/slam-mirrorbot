@@ -32,9 +32,10 @@ Fork this repo, than upload credentials.json and token.pickle to your forks
 
 ## Features supported:
 - Mirroring direct download links to Google Drive
-- Mirroring Mega.nz links to google drive (In development stage)
-- Download progress
-- Upload progress
+- Mirroring Mega.nz links to Google Drive (In development stage)
+- Mirroring Uptobox.com links to Google Drive (Uptobox account must be premium)
+- Copy files from someone's drive to your drive (Using Autorclone)
+- Download/upload progress
 - Download/upload speeds and ETAs
 - Docker support
 - Uploading To Team Drives.
@@ -46,7 +47,10 @@ Fork this repo, than upload credentials.json and token.pickle to your forks
 - Add stickers to your pack
 - Nyaa.si and Sukebei Torrent search
 - Shell and Executor
-- Speedtest
+- Index Link support
+- Shortener support
+- Custom Buttons
+- Speedtest with picture results
 - Extract these filetypes and uploads to google drive
 > ZIP, RAR, TAR, 7z, ISO, WIM, CAB, GZIP, BZIP2, 
 > APM, ARJ, CHM, CPIO, CramFS, DEB, DMG, FAT, 
@@ -97,5 +101,7 @@ Thanks to:
 - [magneto261290](https://github.com/magneto261290/) for some features
 - [SVR666](https://github.com/SVR666/) for some fixes
 - [iamLiquidX](https://github.com/iamLiquidX/) for Speedtest module
+- [4amparaboy](https://github.com/4amparaboy/) for some help
+- [WinTenDev](https://github.com/WinTenDev/) for Uptobox support
 
 and many more people who aren't mentioned here, but may be found in [Contributors](https://github.com/breakdowns/slam-mirrorbot/graphs/contributors).
