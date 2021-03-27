@@ -63,7 +63,7 @@ class AriaDownloadHelper(DownloadHelper):
     def __onDownloadStopped(self, api, gid):
         LOGGER.info(f"onDownloadStop: {gid}")
         dl = getDownloadByGid(gid)
-        if dl: dl.getListener().onDownloadError('Download stopped by user!')
+        if dl: dl.getListener().onDownloadError('Dead torrent!')
 
     @new_thread
     def __onDownloadError(self, api, gid):
@@ -83,11 +83,11 @@ class AriaDownloadHelper(DownloadHelper):
                                       on_download_complete=self.__onDownloadComplete)
 
 
-    def add_download(self, link: str, path,listener):
+    def add_download(self, link: str, path, listener, filename):
         if is_magnet(link):
-            download = aria2.add_magnet(link, {'dir': path})
+            download = aria2.add_magnet(link, {'dir': path, 'out': filename})
         else:
-            download = aria2.add_uris([link], {'dir': path})
+            download = aria2.add_uris([link], {'dir': path, 'out': filename})
         if download.error_message:  # no need to proceed further at this point
             listener.onDownloadError(download.error_message)
             return
