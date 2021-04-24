@@ -113,6 +113,18 @@ except KeyError:
     logging.warning('HEROKU APP NAME not provided!')
     HEROKU_APP_NAME = None
 try:
+    MAX_TORRENT_SIZE = int(getConfig("MAX_TORRENT_SIZE"))
+except KeyError:
+    MAX_TORRENT_SIZE = None
+try:
+   ENABLE_FILESIZE_LIMIT = getConfig('ENABLE_FILESIZE_LIMIT')
+   if ENABLE_FILESIZE_LIMIT.lower() == 'true':
+       ENABLE_FILESIZE_LIMIT = True
+   else:
+       ENABLE_FILESIZE_LIMIT = False
+except KeyError:
+    ENABLE_FILESIZE_LIMIT = False
+try:
     UPTOBOX_TOKEN = getConfig('UPTOBOX_TOKEN')
 except KeyError:
     logging.warning('UPTOBOX_TOKEN not provided!')

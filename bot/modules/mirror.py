@@ -20,6 +20,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.message_utils import *
 from bot.helper.telegram_helper import button_build
+import urllib
 import pathlib
 import os
 import subprocess
@@ -149,19 +150,20 @@ class MirrorListener(listeners.MirrorListeners):
             buttons = button_build.ButtonMaker()
             if SHORTENER is not None and SHORTENER_API is not None:
                 surl = requests.get('https://{}/api?api={}&url={}&format=text'.format(SHORTENER, SHORTENER_API, link)).text
-                buttons.buildbutton("⚡Drive Link⚡", surl)
+                buttons.buildbutton("☁️Drive Link☁️", surl)
             else:
-                buttons.buildbutton("⚡Drive Link⚡", link)
+                buttons.buildbutton("☁️Drive Link☁️", link)
             LOGGER.info(f'Done Uploading {download_dict[self.uid].name()}')
             if INDEX_URL is not None:
-                share_url = requests.utils.requote_uri(f'{INDEX_URL}/{download_dict[self.uid].name()}')
+                url_path = requests.utils.quote(f'{download_dict[self.uid].name()}')
+                share_url = f'{INDEX_URL}/{url_path}'
                 if os.path.isdir(f'{DOWNLOAD_DIR}/{self.uid}/{download_dict[self.uid].name()}'):
                     share_url += '/'
                 if SHORTENER is not None and SHORTENER_API is not None:
                     siurl = requests.get('https://{}/api?api={}&url={}&format=text'.format(SHORTENER, SHORTENER_API, share_url)).text
-                    buttons.buildbutton("🚀Index Link🚀", siurl)
+                    buttons.buildbutton("⚡Index Link⚡", siurl)
                 else:
-                    buttons.buildbutton("🚀Index Link🚀", share_url)
+                    buttons.buildbutton("⚡Index Link⚡", share_url)
             if BUTTON_THREE_NAME is not None and BUTTON_THREE_URL is not None:
                 buttons.buildbutton(f"{BUTTON_THREE_NAME}", f"{BUTTON_THREE_URL}")
             if BUTTON_FOUR_NAME is not None and BUTTON_FOUR_URL is not None:
@@ -202,10 +204,12 @@ class MirrorListener(listeners.MirrorListeners):
             update_all_messages()
 
 def _mirror(bot, update, isTar=False, extract=False):
-    message_args = update.message.text.split(' ')
-    name_args = update.message.text.split('|')
+    mesg = update.message.text.split('\n')
+    message_args = mesg[0].split(' ')
+    name_args = mesg[0].split('|')
     try:
         link = message_args[1]
+        print(link)
         if link.startswith("|") or link.startswith("pswd: "):
             link = ''
     except IndexError:
@@ -217,6 +221,15 @@ def _mirror(bot, update, isTar=False, extract=False):
             name = ''
     except IndexError:
         name = ''
+    try:
+        ussr = urllib.parse.quote(mesg[1], safe='')
+        pssw = urllib.parse.quote(mesg[2], safe='')
+    except:
+        ussr = ''
+        pssw = ''
+    if ussr != '' and pssw != '':
+        link = link.split("://", maxsplit=1)
+        link = f'{link[0]}://{ussr}:{pssw}@{link[1]}'
     pswd = re.search('(?<=pswd: )(.*)', update.message.text)
     if pswd is not None:
       pswd = pswd.groups()

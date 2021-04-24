@@ -1,4 +1,4 @@
-from bot import aria2, download_dict_lock, STOP_DUPLICATE_MIRROR
+from bot import aria2, download_dict_lock, STOP_DUPLICATE_MIRROR, MAX_TORRENT_SIZE, ENABLE_FILESIZE_LIMIT
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.ext_utils.bot_utils import *
 from .download_helper import DownloadHelper
@@ -22,6 +22,14 @@ class AriaDownloadHelper(DownloadHelper):
         download = api.get_download(gid)
         self.name = download.name
         sname = download.name
+        size = download.total_length
+        if ENABLE_FILESIZE_LIMIT:
+          if size / 1024 / 1024 / 1024 > MAX_TORRENT_SIZE:
+              LOGGER.info(f" Download size Exceeded: {gid}")
+              dl.getListener().onDownloadError(f'File size {get_readable_file_size(size)} larger than Maximum Allowed size {MAX_TORRENT_SIZE}')
+              aria2.remove([download])
+          return
+        update_all_messages()
         if STOP_DUPLICATE_MIRROR:
           if dl.getListener().isTar == True:
             sname = sname + ".tar"
@@ -51,7 +59,8 @@ class AriaDownloadHelper(DownloadHelper):
             update_all_messages()
             LOGGER.info(f'Changed gid from {gid} to {new_gid}')
         else:
-            if dl: threading.Thread(target=dl.getListener().onDownloadComplete).start()
+            if dl:
+                threading.Thread(target=dl.getListener().onDownloadComplete).start()
 
     @new_thread
     def __onDownloadPause(self, api, gid):
@@ -82,7 +91,6 @@ class AriaDownloadHelper(DownloadHelper):
                                       on_download_stop=self.__onDownloadStopped,
                                       on_download_complete=self.__onDownloadComplete)
 
-
     def add_download(self, link: str, path, listener, filename):
         if is_magnet(link):
             download = aria2.add_magnet(link, {'dir': path, 'out': filename})
@@ -94,4 +102,3 @@ class AriaDownloadHelper(DownloadHelper):
         with download_dict_lock:
             download_dict[listener.uid] = AriaDownloadStatus(download.gid, listener)
             LOGGER.info(f"Started: {download.gid} DIR:{download.dir} ")
-
