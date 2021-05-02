@@ -4,12 +4,16 @@ import threading
 import time
 import random
 import string
+
 import aria2p
 import telegram.ext as tg
 from dotenv import load_dotenv
 from pyrogram import Client
 from telegraph import Telegraph
+
 import socket
+import faulthandler
+faulthandler.enable()
 from megasdkrestclient import MegaSdkRestClient, errors as mega_err
 import subprocess
 
@@ -111,18 +115,23 @@ except KeyError:
     MEGA_KEY = None
     LOGGER.info('MEGA API KEY NOT AVAILABLE')
 if MEGA_KEY is not None:
+    # Start megasdkrest binary
+    subprocess.Popen(["megasdkrest", "--apikey", MEGA_KEY])
+    time.sleep(3)  # Wait for the mega server to start listening
+    mega_client = MegaSdkRestClient('http://localhost:6090')
     try:
         MEGA_USERNAME = getConfig('MEGA_USERNAME')
         MEGA_PASSWORD = getConfig('MEGA_PASSWORD')
-        # Start megasdkrest binary
-        subprocess.Popen(["megasdkrest", "--apikey", MEGA_KEY])
-        time.sleep(3)
-        mega_client = MegaSdkRestClient('http://localhost:6090')
-        try:
-            mega_client.login(MEGA_USERNAME, MEGA_PASSWORD)
-        except mega_err.MegaSdkRestClientException as e:
-            logging.error(e.message['message'])
-            exit(0)
+        if len(MEGA_USERNAME) > 0 and len(MEGA_PASSWORD) > 0:
+            try:
+                mega_client.login(MEGA_USERNAME, MEGA_PASSWORD)
+            except mega_err.MegaSdkRestClientException as e:
+                logging.error(e.message['message'])
+                exit(0)
+        else:
+            LOGGER.info("Mega API KEY provided but credentials not provided. Starting mega in anonymous mode!")
+            MEGA_USERNAME = None
+            MEGA_PASSWORD = None
     except KeyError:
         LOGGER.info("Mega API KEY provided but credentials not provided. Starting mega in anonymous mode!")
         MEGA_USERNAME = None
@@ -155,7 +164,7 @@ except KeyError:
 try:
     UPTOBOX_TOKEN = getConfig('UPTOBOX_TOKEN')
 except KeyError:
-    logging.warning('UPTOBOX_TOKEN not provided!')
+    logging.info('UPTOBOX_TOKEN not provided!')
     UPTOBOX_TOKEN = None
 try:
     INDEX_URL = getConfig('INDEX_URL')
@@ -227,6 +236,10 @@ try:
 except KeyError:
     SHORTENER = None
     SHORTENER_API = None
+try:
+    IMAGE_URL = getConfig('IMAGE_URL')
+except KeyError:
+    IMAGE_URL = 'https://telegra.ph/file/db03910496f06094f1f7a.jpg'
 
 updater = tg.Updater(token=BOT_TOKEN,use_context=True)
 bot = updater.bot
