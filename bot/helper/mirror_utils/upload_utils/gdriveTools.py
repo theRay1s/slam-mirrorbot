@@ -497,11 +497,10 @@ class GoogleDriveHelper:
         fileName = self.escapes(str(fileName))
         # Create Search Query for API request.
         query = f"'{parent_id}' in parents and (name contains '{fileName}')"
-        response = self.__service.files().list(supportsAllDrives=True,
-                                               includeItemsFromAllDrives=True,
+        response = self.__service.files().list(supportsTeamDrives=True,
+                                               includeTeamDriveItems=True,
                                                q=query,
                                                spaces='drive',
-                                               corpora='allDrives',
                                                pageSize=200,
                                                fields='files(id, name, mimeType, size)',
                                                orderBy='name asc').execute()
