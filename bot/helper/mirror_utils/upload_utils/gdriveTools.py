@@ -293,6 +293,7 @@ class GoogleDriveHelper:
                                                    includeTeamDriveItems=True,
                                                    q=q,
                                                    spaces='drive',
+                                                   corpora: 'allDrives',
                                                    pageSize=200,
                                                    fields='nextPageToken, files(id, name, mimeType,size)',
                                                    pageToken=page_token).execute()
