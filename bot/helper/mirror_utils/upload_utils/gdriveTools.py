@@ -501,11 +501,7 @@ class GoogleDriveHelper:
                                                includeItemsFromAllDrives=True,
                                                q=query,
                                                spaces='drive',
-<<<<<<< HEAD
                                                corpora='allDrives',
-=======
-                                               corpora='allDrives',
->>>>>>> d21deaaf81a500a734f4d4e2691c6789a6a63281
                                                pageSize=200,
                                                fields='files(id, name, mimeType, size)',
                                                orderBy='name asc').execute()
