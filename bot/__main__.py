@@ -8,22 +8,22 @@ from sys import executable
 from datetime import datetime
 import pytz
 import time
-from telegram import ParseMode
+from telegram import ParseMode, BotCommand, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import CommandHandler, run_async
-from bot import dispatcher, updater, botStartTime, AUTHORIZED_CHATS, IMAGE_URL
+from bot import dispatcher, updater, botStartTime, AUTHORIZED_CHATS, SUDO_USER, IMAGE_URL
 from bot.helper.ext_utils import fs_utils
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.message_utils import *
 from .helper.ext_utils.bot_utils import get_readable_file_size, get_readable_time
 from .helper.telegram_helper.filters import CustomFilters
-from .modules import authorize, list, cancel_mirror, mirror_status, mirror, clone, watch, shell, eval, anime, stickers, search, delete, speedtest, usage
+from .modules import authorize, list, cancel_mirror, mirror_status, mirror, clone, watch, shell, eval, anime, stickers, search, delete, speedtest, usage, mediainfo
 
 now=datetime.now(pytz.timezone('Asia/Jakarta'))
 
 
 @run_async
 def stats(update, context):
-    currentTime = get_readable_time((time.time() - botStartTime))
+    currentTime = get_readable_time(time.time() - botStartTime)
     current = now.strftime('%Y/%m/%d %I:%M:%S %p')
     total, used, free = shutil.disk_usage('.')
     total = get_readable_file_size(total)
@@ -58,16 +58,19 @@ Type /{BotCommands.HelpCommand} to get a list of available commands
 
 @run_async
 def chat_list(update, context):
-    chatlist =''
-    chatlist += '\n'.join(str(id) for id in AUTHORIZED_CHATS)
-    sendMessage(f'<b>Authorized List:</b>\n{chatlist}\n', context.bot, update)
+    chat_list = sudo = ''
+    chat_list += '\n'.join(str(id) for id in AUTHORIZED_CHATS)
+    sudo += '\n'.join(str(id) for id in SUDO_USER)
+    sendMessage(f'<b><u>Authorized Chats</u></b>\n{chat_list}\n<b><u>Sudo Users</u></b>\n{sudo}', context.bot, update)
 
 
 @run_async
 def repo(update, context):
-    bot.send_message(update.message.chat_id,
-    reply_to_message_id=update.message.message_id,
-    text="Repo: https://github.com/breakdowns/slam-mirrorbot\nGroup: https://t.me/SlamMirrorSupport", disable_web_page_preview=True)
+    button = [
+    [InlineKeyboardButton("Repo", url=f"https://github.com/breakdowns/slam-mirrorbot")],
+    [InlineKeyboardButton("Support Group", url=f"https://t.me/SlamMirrorSupport")]]
+    reply_markup = InlineKeyboardMarkup(button)
+    update.effective_message.reply_photo(IMAGE_URL, reply_markup=reply_markup)
 
 
 @run_async
@@ -99,13 +102,13 @@ def bot_help(update, context):
     help_string = f'''
 /{BotCommands.HelpCommand}: To get this message
 
-/{BotCommands.MirrorCommand} [download_url][magnet_link]: Start mirroring the link to google drive
+/{BotCommands.MirrorCommand} [download_url][magnet_link]: Start mirroring the link to Google Drive
 
-/{BotCommands.UnzipMirrorCommand} [download_url][magnet_link]: Starts mirroring and if downloaded file is any archive, extracts it to google drive
+/{BotCommands.UnzipMirrorCommand} [download_url][magnet_link]: Starts mirroring and if downloaded file is any archive, extracts it to Google Drive
 
 /{BotCommands.TarMirrorCommand} [download_url][magnet_link]: Start mirroring and upload the archived (.tar) version of the download
 
-/{BotCommands.CloneCommand}: Copy file/folder to google drive
+/{BotCommands.CloneCommand}: Copy file/folder to Google Drive
 
 /{BotCommands.WatchCommand} [youtube-dl supported link]: Mirror through youtube-dl. Click /{BotCommands.WatchCommand} for more help.
 
@@ -115,29 +118,53 @@ def bot_help(update, context):
 
 /{BotCommands.StatusCommand}: Shows a status of all the downloads
 
-/{BotCommands.ListCommand} [search term]: Searches the search term in the Google drive, if found replies with the link
+/{BotCommands.ListCommand} [search term]: Searches the search term in the Google Drive, if found replies with the link
 
 /{BotCommands.StatsCommand}: Show Stats of the machine the bot is hosted on
 
-/{BotCommands.AuthorizeCommand}: Authorize a chat or a user to use the bot (Can only be invoked by owner of the bot)
+/{BotCommands.AuthorizeCommand}: Authorize a chat or a user to use the bot (Can only be invoked by Owner & Sudo of the bot)
 
-/{BotCommands.AuthListCommand}: See Authorized list (Can only be invoked by owner of the bot)
+/{BotCommands.AuthListCommand}: See Authorized list & Sudo User (Can only be invoked by Owner & Sudo of the bot)
 
 /{BotCommands.LogCommand}: Get a log file of the bot. Handy for getting crash reports
 
-/{BotCommands.UsageCommand}: To see Heroku Dyno Stats (Owner only).
+/{BotCommands.UsageCommand}: To see Heroku Dyno Stats (Owner & Sudo only).
 
 /{BotCommands.SpeedCommand}: Check Internet Speed of the Host
 
 /{BotCommands.RepoCommand}: Get the bot repo.
 
-/tshelp: Get help for torrent search module.
+/shell: Run commands in Shell (Terminal).
 
-/weebhelp: Get help for anime, manga and character module.
+/mediainfo: Get detailed info about replied media.
 
-/stickerhelp: Get help for stickers module.
+/tshelp: Get help for Torrent search module.
+
+/weebhelp: Get help for Anime, Manga, and Character module.
+
+/stickerhelp: Get help for Stickers module.
 '''
     sendMessage(help_string, context.bot, update)
+
+
+botcmds = [
+BotCommand(f'{BotCommands.MirrorCommand}', 'Start Mirroring'),
+BotCommand(f'{BotCommands.TarMirrorCommand}','Upload tar (zipped) file'),
+BotCommand(f'{BotCommands.UnzipMirrorCommand}','Extract files'),
+BotCommand(f'{BotCommands.CloneCommand}','Copy file/folder to Drive'),
+BotCommand(f'{BotCommands.WatchCommand}','Mirror YT-DL support link'),
+BotCommand(f'{BotCommands.TarWatchCommand}','Mirror Youtube playlist link as tar'),
+BotCommand(f'{BotCommands.CancelMirror}','Cancel a task'),
+BotCommand(f'{BotCommands.CancelAllCommand}','Cancel all tasks'),
+BotCommand(f'{BotCommands.DeleteCommand}','Delete file from Drive'),
+BotCommand(f'{BotCommands.ListCommand}',' [query] Searches files in G-Drive'),
+BotCommand(f'{BotCommands.StatusCommand}','Get Mirror Status message'),
+BotCommand(f'{BotCommands.StatsCommand}','Bot Usage Stats'),
+BotCommand(f'{BotCommands.HelpCommand}','Get Detailed Help'),
+BotCommand(f'{BotCommands.SpeedCommand}','Check Speed of the host'),
+BotCommand(f'{BotCommands.LogCommand}','Bot Log [owner only]'),
+BotCommand(f'{BotCommands.RestartCommand}','Restart bot [owner only]'),
+BotCommand(f'{BotCommands.RepoCommand}','Get the bot repo')]
 
 
 def main():
@@ -149,6 +176,7 @@ def main():
         restart_message.edit_text("Restarted Successfully!")
         LOGGER.info('Restarted Successfully!')
         remove('restart.pickle')
+    bot.set_my_commands(botcmds)
 
     start_handler = CommandHandler(BotCommands.StartCommand, start,
                                    filters=CustomFilters.authorized_chat | CustomFilters.authorized_user)

@@ -24,4 +24,4 @@ js2py
 lxml
 telegraph
 pytz
-megasdkrestclient>=0.1.1,<1.0.0
+html-telegraph-poster>=0.2.31
