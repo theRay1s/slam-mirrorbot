@@ -1,4 +1,4 @@
-from bot import aria2, download_dict_lock, STOP_DUPLICATE_MIRROR, MAX_TORRENT_SIZE, ENABLE_FILESIZE_LIMIT
+from bot import aria2, download_dict_lock, STOP_DUPLICATE_MIRROR, TORRENT_DIRECT_LIMIT
 from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.ext_utils.bot_utils import *
 from .download_helper import DownloadHelper
@@ -16,33 +16,45 @@ class AriaDownloadHelper(DownloadHelper):
 
     @new_thread
     def __onDownloadStarted(self, api, gid):
-        sleep(1)
-        LOGGER.info(f"onDownloadStart: {gid}")
-        dl = getDownloadByGid(gid)
-        download = api.get_download(gid)
-        self.name = download.name
-        sname = download.name
-        if STOP_DUPLICATE_MIRROR:
-          if dl.getListener().isTar == True:
-            sname = sname + ".tar"
-          if dl.getListener().extract == True:
-            smsg = None
-          else:
-            gdrive = GoogleDriveHelper(None)
-            smsg, button = gdrive.drive_list(sname)
-          if smsg:
-              dl.getListener().onDownloadError(f'File is already available in Drive.\n\n')
-              sendMarkup("Here are the search results:", dl.getListener().bot, dl.getListener().update, button)
-              aria2.remove([download])
-              return
+        if STOP_DUPLICATE_MIRROR or TORRENT_DIRECT_LIMIT is not None:
+            sleep(0.5)
+            dl = getDownloadByGid(gid)
+            download = api.get_download(gid)
+            
+            if STOP_DUPLICATE_MIRROR:
+                LOGGER.info(f"Checking File/Folder if already in Drive...")
+                self.name = download.name
+                sname = download.name
+                if self.listener.isTar:
+                    sname = sname + ".tar"
+                if self.listener.extract:
+                    smsg = None
+                else:
+                    gdrive = GoogleDriveHelper(None)
+                    smsg, button = gdrive.drive_list(sname)
+                if smsg:
+                    aria2.remove([download])
+                    dl.getListener().onDownloadError(f'File/Folder is already available in Drive.\n\n')
+                    sendMarkup("Here are the search results:", dl.getListener().bot, dl.getListener().update, button)
+                    return
 
-        size = download.total_length
-        if ENABLE_FILESIZE_LIMIT:
-          if size / 1024 / 1024 / 1024 > MAX_TORRENT_SIZE:
-              LOGGER.info(f"Download size Exceeded: {gid}")
-              dl.getListener().onDownloadError(f'File size {get_readable_file_size(size)} larger than Maximum Allowed size {MAX_TORRENT_SIZE}GB')
-              aria2.remove([download])
-              return
+            if TORRENT_DIRECT_LIMIT is not None:
+                LOGGER.info(f"Checking File/Folder Size...")
+                sleep(1.5)
+                size = aria2.get_download(gid).total_length
+                limit = TORRENT_DIRECT_LIMIT
+                limit = limit.split(' ', maxsplit=1)
+                limitint = int(limit[0])
+                if 'GB' in limit or 'gb' in limit:
+                    if size > limitint * 1024**3:
+                        aria2.remove([download])
+                        dl.getListener().onDownloadError(f'Torrent/Direct limit is {TORRENT_DIRECT_LIMIT}.\nYour File/Folder size is {get_readable_file_size(size)}')
+                        return
+                elif 'TB' in limit or 'tb' in limit:
+                    if size > limitint * 1024**4:
+                        aria2.remove([download])
+                        dl.getListener().onDownloadError(f'Torrent/Direct limit is {TORRENT_DIRECT_LIMIT}.\nYour File/Folder size is {get_readable_file_size(size)}')
+                        return
         update_all_messages()
 
     def __onDownloadComplete(self, api: API, gid):
@@ -53,6 +65,7 @@ class AriaDownloadHelper(DownloadHelper):
             new_gid = download.followed_by_ids[0]
             new_download = api.get_download(new_gid)
             with download_dict_lock:
+                sleep(0.5)
                 download_dict[dl.uid()] = AriaDownloadStatus(new_gid, dl.getListener())
                 if new_download.is_torrent:
                     download_dict[dl.uid()].is_torrent = True
@@ -63,31 +76,25 @@ class AriaDownloadHelper(DownloadHelper):
                 threading.Thread(target=dl.getListener().onDownloadComplete).start()
 
     @new_thread
-    def __onDownloadPause(self, api, gid):
-        LOGGER.info(f"onDownloadPause: {gid}")
-        dl = getDownloadByGid(gid)
-        dl.getListener().onDownloadError('Download stopped by user!')
-
-    @new_thread
     def __onDownloadStopped(self, api, gid):
-        LOGGER.info(f"onDownloadStop: {gid}")
+        sleep(0.5)
         dl = getDownloadByGid(gid)
-        if dl: dl.getListener().onDownloadError('Dead torrent!')
+        if dl: 
+            dl.getListener().onDownloadError('Dead torrent!')
 
     @new_thread
     def __onDownloadError(self, api, gid):
         sleep(0.5)  # sleep for split second to ensure proper dl gid update from onDownloadComplete
-        LOGGER.info(f"onDownloadError: {gid}")
         dl = getDownloadByGid(gid)
         download = api.get_download(gid)
         error = download.error_message
         LOGGER.info(f"Download Error: {error}")
-        if dl: dl.getListener().onDownloadError(error)
+        if dl: 
+            dl.getListener().onDownloadError(error)
 
     def start_listener(self):
         aria2.listen_to_notifications(threaded=True, on_download_start=self.__onDownloadStarted,
                                       on_download_error=self.__onDownloadError,
-                                      on_download_pause=self.__onDownloadPause,
                                       on_download_stop=self.__onDownloadStopped,
                                       on_download_complete=self.__onDownloadComplete)
 
@@ -102,3 +109,4 @@ class AriaDownloadHelper(DownloadHelper):
         with download_dict_lock:
             download_dict[listener.uid] = AriaDownloadStatus(download.gid, listener)
             LOGGER.info(f"Started: {download.gid} DIR:{download.dir} ")
+        self.listener = listener
