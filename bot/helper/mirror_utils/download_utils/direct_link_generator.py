@@ -8,8 +8,7 @@ from https://github.com/AvinashReddy3108/PaperplaneExtended . I hereby take no c
 than the modifications. See https://github.com/AvinashReddy3108/PaperplaneExtended/commits/master/userbot/modules/direct_links.py
 for original authorship. """
 
-from bot import UPTOBOX_TOKEN
-import logging
+from bot import LOGGER, UPTOBOX_TOKEN
 import json
 import math
 import re
@@ -33,7 +32,7 @@ def direct_link_generator(link: str):
     if not link:
         raise DirectDownloadLinkException("`No links found!`")
     elif 'youtube.com' in link or 'youtu.be' in link:
-        raise DirectDownloadLinkException(f"Youtube Link use /{BotCommands.WatchCommand} or /{BotCommands.TarWatchCommand}")
+        raise DirectDownloadLinkException(f"Use /{BotCommands.WatchCommand} to mirror Youtube link\nUse /{BotCommands.TarWatchCommand} to make tar of Youtube playlist")
     elif 'zippyshare.com' in link:
         return zippy_share(link)
     elif 'yadi.sk' in link:
@@ -54,9 +53,13 @@ def direct_link_generator(link: str):
         return anon(link)
     elif 'letsupload.io' in link:
         return letsupload(link)
+    elif 'fembed.net' in link:
+        return fembed(link)
     elif 'fembed.com' in link:
         return fembed(link)
     elif 'femax20.com' in link:
+        return fembed(link)
+    elif 'fcdn.stream' in link:
         return fembed(link)
     elif 'feurl.com' in link:
         return fembed(link)
@@ -71,6 +74,8 @@ def direct_link_generator(link: str):
     elif 'sbembed.com' in link:
         return sbembed(link)
     elif 'streamsb.net' in link:
+        return sbembed(link)
+    elif 'sbplay.org' in link:
         return sbembed(link)
     elif '1drv.ms' in link:
         return onedrive(link)
@@ -150,13 +155,12 @@ def uptobox(url: str) -> str:
     except IndexError:
         raise DirectDownloadLinkException("`No Uptobox links found`\n")
     if UPTOBOX_TOKEN is None:
-        logging.error('UPTOBOX_TOKEN not provided!')
-        dl_url = url
+        LOGGER.error('UPTOBOX_TOKEN not provided!')
+        dl_url = link
     else:
         try:
             link = re.findall(r'\bhttp?://.*uptobox\.com/dl\S+', url)[0]
-            logging.info('Uptobox direct link')
-            dl_url = url
+            dl_url = link
         except:
             file_id = re.findall(r'\bhttps?://.*uptobox\.com/(\w+)', url)[0]
             file_link = 'https://uptobox.com/api/link?token=%s&file_code=%s' % (UPTOBOX_TOKEN, file_id)
